@@ -62,7 +62,7 @@ OpenCDA
 
 Python (NumPy, Pandas, Matplotlib)
 
-[Lab Website]([url](https://tasl.ucr.edu/))
+[Lab Website](https://tasl.ucr.edu/)
 
 
 # OpenCDA
