@@ -1,0 +1,10 @@
+evaluation:
+  sustainability:
+    enabled: true
+    is_ev_default: false
+    grid_co2_g_per_kwh: 400
+    regen_capture_fraction: 0.5
+    idle_fuel_liters_per_s: 0.0004
+    cell_size_m: 50
+    log_folder: "./cache/sustainability_logs"
+    sample_hz: 5

@@ -18,9 +18,6 @@ from omegaconf.listconfig import ListConfig
 import carla
 import numpy as np
 
-# sustainability evaluator
-from opencda.sustainability.evaluator import SustainabilityEvaluator
-
 from opencda.core.common.vehicle_manager import VehicleManager
 from opencda.core.application.platooning.platooning_manager import \
     PlatooningManager
@@ -208,40 +205,6 @@ class ScenarioManager:
         self.origin_settings = self.world.get_settings()
         new_settings = self.world.get_settings()
 
-        # ----------------------------
-        # Initialize Sustainability Evaluator
-        # ----------------------------
-        try:
-            # map bounds and cell size are defaults; you can expose these through scenario_params
-            map_bounds = {'min_x': -1000, 'min_y': -1000, 'max_x': 1000, 'max_y': 1000}
-            cell_size = 50
-            log_folder = "./cache/sustainability_logs"
-            # If user provided sustainability config in scenario yaml, pass it:
-            sust_cfg = {}
-            if 'sustainability' in scenario_params:
-                try:
-                    sust_cfg = scenario_params['sustainability']
-                except Exception:
-                    sust_cfg = {}
-            self.sust_eval = SustainabilityEvaluator(map_bounds=map_bounds,
-                                                    cell_size_m=cell_size,
-                                                    log_folder=log_folder,
-                                                    config=sust_cfg)
-            # try to register existing vehicles in the world (background already spawned)
-            try:
-                for actor in self.world.get_actors().filter('vehicle.*'):
-                    # Some actors might not be full vehicle objects at this time; ignore failures
-                    try:
-                        self.sust_eval.register_vehicle(actor)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-        except Exception as e:
-            # do not stop simulation if sustainability init fails
-            print("[SimAPI] Sustainability evaluator init failed:", e)
-            self.sust_eval = None
-
         if simulation_config['sync_mode']:
             new_settings.synchronous_mode = True
             new_settings.fixed_delta_seconds = \
@@ -381,17 +344,6 @@ class ScenarioManager:
                 destination,
                 clean=True)
 
-            # Register the vehicle manager's car with sustainability evaluator
-            try:
-                if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                    try:
-                        self.sust_eval.register_vehicle(vehicle)
-                    except Exception:
-                        # ignore registration failures for now
-                        pass
-            except Exception:
-                pass
-
             single_cav_list.append(vehicle_manager)
 
         return single_cav_list
@@ -437,16 +389,6 @@ class ScenarioManager:
             vehicle_manager.vehicle.get_location(),
             destination,
             clean=True)
-
-        # register vehicle for sustainability
-        try:
-            if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                try:
-                    self.sust_eval.register_vehicle(vehicle)
-                except Exception:
-                    pass
-        except Exception:
-            pass
 
         return [vehicle_manager]
 
@@ -522,16 +464,6 @@ class ScenarioManager:
                     platoon_manager.set_lead(vehicle_manager)
                 else:
                     platoon_manager.add_member(vehicle_manager, leader=False)
-
-                # register this platoon member vehicle for sustainability
-                try:
-                    if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                        try:
-                            self.sust_eval.register_vehicle(vehicle)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
 
             self.world.tick()
             destination = carla.Location(x=platoon['destination'][0],
@@ -641,16 +573,6 @@ class ScenarioManager:
             vehicle = self.world.spawn_actor(ego_vehicle_bp, spawn_transform)
             vehicle.set_autopilot(True, 8000)
 
-            # register background vehicle for sustainability
-            try:
-                if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                    try:
-                        self.sust_eval.register_vehicle(vehicle)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
             if 'vehicle_speed_perc' in vehicle_config:
                 tm.vehicle_percentage_speed_difference(
                     vehicle, vehicle_config['vehicle_speed_perc'])
@@ -758,17 +680,6 @@ class ScenarioManager:
                 continue
 
             vehicle.set_autopilot(True, 8000)
-
-            # register background vehicle for sustainability
-            try:
-                if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                    try:
-                        self.sust_eval.register_vehicle(vehicle)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
             tm.auto_lane_change(vehicle, traffic_config['auto_lane_change'])
 
             if 'ignore_lights_percentage' in traffic_config:
@@ -827,20 +738,7 @@ class ScenarioManager:
         """
         Tick the server.
         """
-        # tick world
         self.world.tick()
-
-        # update sustainability metrics (if enabled)
-        try:
-            if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                snapshot = self.world.get_snapshot()
-                try:
-                    self.sust_eval.update(snapshot)
-                except Exception as e:
-                    print("[SimAPI] Sustainability update error:", e)
-        except Exception:
-            # don't let sustainability errors break the sim loop
-            pass
 
     def destroyActors(self):
         """
@@ -855,15 +753,5 @@ class ScenarioManager:
         """
         Simulation close.
         """
-        # finalize sustainability logs
-        try:
-            if hasattr(self, 'sust_eval') and self.sust_eval is not None:
-                try:
-                    self.sust_eval.finalize()
-                except Exception as e:
-                    print("[SimAPI] Sustainability finalize error:", e)
-        except Exception:
-            pass
-
         # restore to origin setting
         self.world.apply_settings(self.origin_settings)
