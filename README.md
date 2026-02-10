@@ -62,6 +62,8 @@ OpenCDA
 
 Python (NumPy, Pandas, Matplotlib)
 
+Note: The `cache/sustainability_logs/` directory is generated automatically during simulation runtime and is therefore excluded from version control. Running any scenario will recreate this folder and populate it with CSV, JSON, and visualization outputs.
+
 [Lab Website](https://tasl.ucr.edu/)
 
 
