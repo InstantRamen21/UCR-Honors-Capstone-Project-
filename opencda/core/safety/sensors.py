@@ -103,10 +103,29 @@ class IMUSensor(object):
         self = weak_self()
         if not self:
             return
+
+        # Guard against destroyed vehicle
+        if self.vehicle is None:
+            return
+
+        try:
+            # This will raise RuntimeError if vehicle is destroyed
+            _ = self.vehicle.get_transform()
+        except RuntimeError:
+            return
+
         linear_acceleration = imu_data.accelerometer
         angular_velocity = imu_data.gyroscope
-        signed_forward_acceleration = self.get_signed_forward_acceleration(linear_acceleration)
-        self.imu_data.append((linear_acceleration, angular_velocity, signed_forward_acceleration))
+
+        try:
+            signed_forward_acceleration = \
+                self.get_signed_forward_acceleration(linear_acceleration)
+        except RuntimeError:
+            return
+
+        self.imu_data.append(
+            (linear_acceleration, angular_velocity, signed_forward_acceleration)
+        )
 
     def return_status(self):
         return {'imu': False}
@@ -398,3 +417,7 @@ class TrafficLightDector(object):
 
     def return_status(self):
         return {'ran_light': self.ran_light}
+    
+    def destroy(self):
+        # No CARLA actor created, so nothing to clean up
+        pass

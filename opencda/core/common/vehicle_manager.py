@@ -226,7 +226,22 @@ class VehicleManager(object):
         """
         Destroy the actor vehicle
         """
-        self.perception_manager.destroy()
-        self.localizer.destroy()
-        self.vehicle.destroy()
-        self.map_manager.destroy()
+        # Destroy safety sensors FIRST
+        if self.safety_manager:
+            self.safety_manager.destroy()
+
+        # Destroy perception sensors
+        if self.perception_manager:
+            self.perception_manager.destroy()
+
+        # Destroy localization sensors
+        if self.localizer:
+            self.localizer.destroy()
+
+        # Destroy map manager
+        if self.map_manager:
+            self.map_manager.destroy()
+
+        # Finally destroy vehicle
+        if self.vehicle:
+            self.vehicle.destroy()

@@ -85,7 +85,7 @@ def run_scenario(opt, scenario_params):
                     single_cav.vehicle.apply_control(control)
 
     finally:
-        eval_manager.evaluate()
+        # eval_manager.evaluate() #commented out for sustainability project due to errors
 
         if opt.record:
             scenario_manager.client.stop_recorder()

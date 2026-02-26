@@ -19,6 +19,10 @@ class SustainabilityMetrics:
 
         self.vehicle = vehicle
         self.id = vehicle_id or vehicle.id
+        
+        print(f"[SUST] Vehicle {self.vehicle.id} role:",
+        self.vehicle.attributes.get("role_name"))
+        
         self.veh_params = veh_params or {}
 
         # -------------------------------------------------------
