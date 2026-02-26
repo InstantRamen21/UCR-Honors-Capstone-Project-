@@ -1,3 +1,77 @@
+🌱 Sustainability Metrics for Autonomous Driving Simulation
+
+Autonomous vehicles have the potential to significantly improve traffic efficiency, safety, and accessibility—but their environmental impact depends heavily on how they drive. While most autonomous driving research focuses on safety and performance, sustainability metrics such as energy consumption, emissions, and eco-driving behavior are often overlooked.
+
+This project introduces a modular sustainability evaluation framework integrated into CARLA and OpenCDA that enables detailed analysis of the environmental and behavioral impacts of autonomous driving policies in simulation.
+
+🚗 Project Overview
+
+This repository extends the OpenCDA autonomous driving stack with a physics-based sustainability metrics pipeline that operates alongside vehicle control and perception modules. The framework tracks per-vehicle and spatial sustainability indicators during simulation, enabling post-run analysis and visualization.
+
+Key contributions include:
+
+Real-time energy consumption modeling based on vehicle dynamics
+
+CO₂ emissions estimation for both internal combustion and electric vehicle models
+
+Eco-driving behavior analysis using acceleration smoothness, jerk, braking patterns, and idle time
+
+Spatial emissions aggregation using a grid-based heatmap
+
+Automated logging, summarization, and visualization tools
+
+All metrics are computed directly from vehicle state data provided by CARLA, ensuring transparency and reproducibility.
+
+📊 Tracked Sustainability Metrics
+
+For each simulated vehicle, the framework computes:
+
+Energy consumption (Wh)
+Estimated using aerodynamic drag, rolling resistance, inertial forces, and drivetrain efficiency.
+
+CO₂ emissions (g)
+Calculated using fuel-based conversion for ICE vehicles and grid-based emissions factors for EVs.
+
+Regenerative braking potential (Wh)
+Estimated from negative mechanical power during deceleration.
+
+Eco-driving score (0–100)
+A composite score that penalizes harsh acceleration, aggressive braking, high jerk, and excessive idling.
+
+In addition, emissions are aggregated into a 2D spatial grid, enabling visualization of localized environmental impact along the roadway.
+
+🧠 Motivation
+
+By providing interpretable sustainability metrics alongside traditional performance measures, this framework allows researchers and engineers to:
+
+Compare autonomous driving policies beyond safety and efficiency
+
+Identify environmentally costly driving behaviors
+
+Explore tradeoffs between travel time, comfort, and emissions
+
+Design sustainability-aware autonomous control strategies
+
+The system is designed to be lightweight, extensible, and scenario-agnostic, making it suitable for research, education, and future policy-driven autonomous vehicle evaluation.
+
+🛠 Built With
+
+CARLA Simulator (v0.9.12)
+
+OpenCDA
+
+Python (NumPy, Pandas, Matplotlib)
+
+Note: The `cache/sustainability_logs/` directory is generated automatically during simulation runtime and is therefore excluded from version control. Running any scenario will recreate this folder and populate it with CSV, JSON, and visualization outputs.
+
+[Document with Summary/Instructions](https://docs.google.com/document/d/1Tcr5SiSvFJljOJPXTmZroKOqZfDWWW7Osq9d7-62o7E/edit?usp=sharing)
+
+[Lab Website](https://tasl.ucr.edu/)
+
+<img width="1170" height="466" alt="image" src="https://github.com/user-attachments/assets/c7fae07f-5c7e-42cb-8d63-92a47bf49bf1" />
+
+
+
 # OpenCDA
 [![Build Status](https://travis-ci.com/ucla-mobility/OpenCDA.svg?branch=develop)](https://travis-ci.com/ucla-mobility/OpenCDA)
 [![Coverage Status](https://coveralls.io/repos/github/ucla-mobility/OpenCDA/badge.svg?branch=feature/readme_revise)](https://coveralls.io/github/ucla-mobility/OpenCDA?branch=feature/readme_revise)
