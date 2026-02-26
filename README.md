@@ -68,6 +68,9 @@ Note: The `cache/sustainability_logs/` directory is generated automatically duri
 
 [Lab Website](https://tasl.ucr.edu/)
 
+<img width="1170" height="466" alt="image" src="https://github.com/user-attachments/assets/c7fae07f-5c7e-42cb-8d63-92a47bf49bf1" />
+
+
 
 # OpenCDA
 [![Build Status](https://travis-ci.com/ucla-mobility/OpenCDA.svg?branch=develop)](https://travis-ci.com/ucla-mobility/OpenCDA)
