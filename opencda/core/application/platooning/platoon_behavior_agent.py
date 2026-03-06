@@ -676,7 +676,7 @@ class PlatooningBehaviorAgent(BehaviorAgent):
         # relationship with speed
         if self.current_gap < self.open_gap:
             self.current_gap += 0.01
-        print('cuurent gap is %f' % self.current_gap)
+        print('current gap is %f' % self.current_gap)
         target_speed, target_loc = self.platooning_following_manager(
             self.current_gap)
 

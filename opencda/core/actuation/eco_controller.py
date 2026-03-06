@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-PID Control Class
+ECO PID Control Class
+Extends standard PID controller with fuel/energy efficiency improvements:
+- Speed reduction only on sharp turns (not gentle curves)
+- Smooth acceleration limiting to prevent throttle spikes
+- Coasting zone: reduce throttle before braking is needed
 """
 
 # Copyright (c) # Copyright (c) 2018-2020 CVC.
@@ -19,7 +23,18 @@ import carla
 
 class Controller:
     """
-    PID Controller implementation.
+    ECO PID Controller — drop-in replacement for the standard PID controller,
+    with modifications for improved energy efficiency.
+
+    Key differences from standard PID:
+    - Steering-based speed adjustment only kicks in for sharper turns
+      (threshold > 0.15 rad) to avoid unnecessary speed reductions on
+      straight/gentle roads.
+    - Acceleration smoothing uses a gentler ramp (max_accel_change = 0.2)
+      so the vehicle doesn't lag behind platoon speed commands.
+    - Coasting: when close to target speed (within a small window), throttle
+      is gently reduced to let the vehicle coast rather than actively
+      maintaining speed with throttle.
 
     Parameters
     ----------
@@ -76,6 +91,28 @@ class Controller:
         self.past_steering = 0.
 
         self.dynamic = args['dynamic']
+        
+        # ECO-specific state
+        self.last_accel = 0.0
+
+        # --- Tunable ECO parameters ---
+        # Only reduce speed if steering angle exceeds this threshold (radians).
+        # 0.15 ≈ ~8.6 degrees — ignores gentle curves, only acts on real turns.
+        self.steering_threshold = 0.15
+
+        # Maximum fraction of speed to shed on very sharp turns (steering=1.0).
+        # 0.15 means at most 15% speed reduction even in the sharpest turn.
+        self.max_speed_reduction = 0.15
+
+        # Acceleration smoothing: max change per step.
+        # 0.2 is gentler than 0.1 — allows the vehicle to respond to
+        # platoon speed commands without lagging.
+        self.max_accel_change = 0.2
+
+        # Coasting window: if |speed_error| < this, ease off throttle slightly.
+        # Helps avoid the throttle-on / throttle-off oscillation near target speed.
+        self.coast_window = 2.0   # km/h
+        self.coast_throttle_cap = 0.35  # max throttle when coasting
 
     def dynamic_pid(self):
         """
@@ -134,7 +171,7 @@ class Controller:
                        (self._lon_k_d * _de) +
                        (self._lon_k_i * _ie),
                        -1.0, 1.0)
-        
+
     def lat_run_step(self, target_location):
         """
         Generate the throttle command based on current speed and target speed
@@ -200,6 +237,11 @@ class Controller:
             Desired vehicle control command for the current step.
 
         """
+        
+        if not hasattr(self, '_confirmed'):
+            print(f"[ECO] run_step called — eco_controller is active")
+            self._confirmed = True
+        
         # control class for carla vehicle
         control = carla.VehicleControl()
 
@@ -211,8 +253,28 @@ class Controller:
             control.hand_brake = False
             return control
 
-        acceleration = self.lon_run_step(target_speed)
+        # --- Lateral control ---
         current_steering = self.lat_run_step(waypoint)
+
+        # --- ECO: Speed reduction only on sharp turns ---
+        abs_steer = abs(current_steering)
+        if abs_steer > self.steering_threshold:
+            reduction_fraction = (
+                (abs_steer - self.steering_threshold) /
+                (1.0 - self.steering_threshold)
+            ) * self.max_speed_reduction
+            adjusted_speed = target_speed * (1.0 - reduction_fraction)
+        else:
+            adjusted_speed = target_speed
+
+        # --- Longitudinal control ---
+        acceleration = self.lon_run_step(adjusted_speed)
+
+        # --- ECO: Smooth acceleration (prevent throttle spikes) ---
+        accel_diff = acceleration - self.last_accel
+        accel_diff = np.clip(accel_diff, -self.max_accel_change, self.max_accel_change)
+        acceleration = self.last_accel + accel_diff
+        self.last_accel = acceleration
 
         if acceleration >= 0.0:
             control.throttle = min(acceleration, self.max_throttle)

@@ -9,6 +9,7 @@ import uuid
 
 from opencda.core.actuation.control_manager \
     import ControlManager
+import importlib
 from opencda.core.application.platooning.platoon_behavior_agent\
     import PlatooningBehaviorAgent
 from opencda.core.common.v2x_manager \
@@ -94,6 +95,8 @@ class VehicleManager(object):
         behavior_config = config_yaml['behavior']
         control_config = config_yaml['controller']
         v2x_config = config_yaml['v2x']
+        
+        print("Vehicle", vehicle.id, "controller:", control_config['type'])
 
         # v2x module
         self.v2x_manager = V2XManager(cav_world, v2x_config, self.vid)
@@ -126,8 +129,20 @@ class VehicleManager(object):
         else:
             self.agent = BehaviorAgent(vehicle, carla_map, behavior_config)
 
-        # Control module
-        self.controller = ControlManager(control_config)
+        vehicle_id = vehicle.id
+
+        # choose controller depending on vehicle
+        if vehicle_id == 45:
+            print("Vehicle 45 using ECO controller")
+            
+            controller_module = importlib.import_module(
+                "opencda.core.actuation.eco_controller"
+            )
+            
+            self.controller = controller_module.Controller(control_config['args'])
+
+        else:
+            self.controller = ControlManager(control_config)
 
         if data_dumping:
             self.data_dumper = DataDumper(self.perception_manager,
