@@ -7,6 +7,7 @@
 # License: TDG-Attribution-NonCommercial-NoDistrib
 
 import math
+import os
 import uuid
 
 import cv2
@@ -128,6 +129,16 @@ class MapManager(object):
         self.static_bev = None
         self.vis_bev = None
 
+        self.count = 0
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        self.save_parent_folder = \
+            os.path.join(current_path,
+                         '../../../data_dumping',
+                         'bev',
+                         str(self.agent_id))
+        if not os.path.exists(self.save_parent_folder):
+            os.makedirs(self.save_parent_folder)
+
     def update_information(self, ego_pose):
         """
         Update the ego pose as the map center.
@@ -144,12 +155,17 @@ class MapManager(object):
         """
         if not self.actvate:
             return
+        self.count += 1
         self.rasterize_static()
         self.rasterize_dynamic()
         if self.visualize:
             cv2.imshow('the bev map of agent %s' % self.agent_id,
                        self.vis_bev)
             cv2.waitKey(1)
+        if self.count % 10 == 0:
+            image_name = '%06d' % self.count + '_bev.png'
+            cv2.imwrite(os.path.join(self.save_parent_folder, image_name),
+                        self.vis_bev)
 
     @staticmethod
     def get_bounds(left_lane, right_lane):
