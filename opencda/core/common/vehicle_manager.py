@@ -19,6 +19,7 @@ from opencda.core.sensing.localization.localization_manager \
 from opencda.core.sensing.perception.perception_manager \
     import PerceptionManager
 from opencda.core.safety.safety_manager import SafetyManager
+from opencda.core.safety.sensors import BEVCameraSensor
 from opencda.core.plan.behavior_agent \
     import BehaviorAgent
 from opencda.core.map.map_manager import MapManager
@@ -111,6 +112,8 @@ class VehicleManager(object):
         self.map_manager = MapManager(vehicle,
                                       carla_map,
                                       map_config)
+        # BEV camera (real CARLA sensor, top-down view)
+        self.bev_camera = BEVCameraSensor(vehicle, vehicle.id)
         # safety manager
         self.safety_manager = SafetyManager(cav_world=cav_world,
                                             vehicle=vehicle,
@@ -226,6 +229,7 @@ class VehicleManager(object):
         """
         # visualize the bev map if needed
         self.map_manager.run_step()
+        self.bev_camera.run_step()
         target_speed, target_pos = self.agent.run_step(target_speed)
         control = self.controller.run_step(target_speed, target_pos)
 
@@ -256,6 +260,10 @@ class VehicleManager(object):
         # Destroy map manager
         if self.map_manager:
             self.map_manager.destroy()
+
+        # Destroy BEV camera
+        if self.bev_camera:
+            self.bev_camera.destroy()
 
         # Finally destroy vehicle
         if self.vehicle:
