@@ -86,6 +86,18 @@ class EvaluationManager(object):
     @staticmethod
     def plot_3d(timestamp, acc_x_axis, acc_y_axis, acc_z_axis, acc_magnitude,
                 gyro_x_axis, gyro_y_axis, gyro_z_axis, gyro_magnitude):
+        min_len = min(len(timestamp), len(acc_x_axis), len(acc_y_axis),
+                  len(acc_z_axis), len(acc_magnitude), len(gyro_x_axis),
+                  len(gyro_y_axis), len(gyro_z_axis), len(gyro_magnitude))
+        timestamp     = timestamp[:min_len]
+        acc_x_axis    = acc_x_axis[:min_len]
+        acc_y_axis    = acc_y_axis[:min_len]
+        acc_z_axis    = acc_z_axis[:min_len]
+        acc_magnitude = acc_magnitude[:min_len]
+        gyro_x_axis   = gyro_x_axis[:min_len]
+        gyro_y_axis   = gyro_y_axis[:min_len]
+        gyro_z_axis   = gyro_z_axis[:min_len]
+        gyro_magnitude= gyro_magnitude[:min_len]
         fig, axes = plt.subplots(nrows=2, ncols=4)
         ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8 = axes.flatten()
         ax1.plot(timestamp, acc_x_axis, label='Accelerometer X axis')

@@ -2,8 +2,10 @@
 Sensors related to safety status check
 """
 import math
+import os
 import numpy as np
 import carla
+import cv2
 import weakref
 import shapely
 from collections import deque
@@ -421,3 +423,80 @@ class TrafficLightDector(object):
     def destroy(self):
         # No CARLA actor created, so nothing to clean up
         pass
+    
+class BEVCameraSensor(object):
+    """
+    Bird's Eye View camera sensor attached above the vehicle looking straight
+    down.  Each step the image is shown via cv2.imshow and saved every
+    ``save_freq`` steps to ``data_dumping/bev_camera/<agent_id>/``.
+
+    Parameters
+    ----------
+    vehicle : carla.Vehicle
+    agent_id : int
+        Used for the window title and save path.
+    height : float
+        Metres above the vehicle roof to mount the camera (default 30 m).
+    image_size : tuple
+        (width, height) in pixels (default 512x512).
+    save_freq : int
+        Save to disk every N steps (default 10).
+    """
+
+    def __init__(self, vehicle, agent_id,
+                 height=30.0, image_size=(512, 512), save_freq=10):
+        self.agent_id = agent_id
+        self.save_freq = save_freq
+        self.count = 0
+        self.image = None
+
+        world = vehicle.get_world()
+        bp = world.get_blueprint_library().find('sensor.camera.rgb')
+        bp.set_attribute('image_size_x', str(image_size[0]))
+        bp.set_attribute('image_size_y', str(image_size[1]))
+        bp.set_attribute('fov', '90')
+
+        # Mount directly above the vehicle, pointing straight down
+        transform = carla.Transform(
+            carla.Location(x=0.0, y=0.0, z=height),
+            carla.Rotation(pitch=-90.0, yaw=0.0, roll=0.0)
+        )
+        self.sensor = world.spawn_actor(bp, transform, attach_to=vehicle)
+        self.image_width = image_size[0]
+        self.image_height = image_size[1]
+
+        weak_self = weakref.ref(self)
+        self.sensor.listen(
+            lambda data: BEVCameraSensor._on_image(weak_self, data))
+
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        self.save_dir = os.path.join(
+            current_path, '../../../data_dumping',
+            'bev_camera', str(agent_id))
+        os.makedirs(self.save_dir, exist_ok=True)
+
+    @staticmethod
+    def _on_image(weak_self, data):
+        self = weak_self()
+        if not self:
+            return
+        img = np.array(data.raw_data).reshape(
+            (self.image_height, self.image_width, 4))[:, :, :3]
+        self.image = img
+
+    def run_step(self):
+        if self.image is None:
+            return
+        self.count += 1
+        # BGR for OpenCV display/save
+        bgr = cv2.cvtColor(self.image, cv2.COLOR_RGB2BGR)
+        cv2.imshow('BEV Camera – agent %s' % self.agent_id, bgr)
+        cv2.waitKey(1)
+        if self.count % self.save_freq == 0:
+            fname = '%06d_bev_cam.png' % self.count
+            cv2.imwrite(os.path.join(self.save_dir, fname), bgr)
+
+    def destroy(self):
+        if self.sensor.is_alive:
+            self.sensor.stop()
+            self.sensor.destroy()

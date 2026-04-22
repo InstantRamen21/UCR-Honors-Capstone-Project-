@@ -19,6 +19,7 @@ from opencda.core.sensing.localization.localization_manager \
 from opencda.core.sensing.perception.perception_manager \
     import PerceptionManager
 from opencda.core.safety.safety_manager import SafetyManager
+from opencda.core.safety.sensors import BEVCameraSensor
 from opencda.core.plan.behavior_agent \
     import BehaviorAgent
 from opencda.core.map.map_manager import MapManager
@@ -111,6 +112,8 @@ class VehicleManager(object):
         self.map_manager = MapManager(vehicle,
                                       carla_map,
                                       map_config)
+        # BEV camera (real CARLA sensor, top-down view)
+        self.bev_camera = BEVCameraSensor(vehicle, vehicle.id)
         # safety manager
         self.safety_manager = SafetyManager(cav_world=cav_world,
                                             vehicle=vehicle,
@@ -132,17 +135,22 @@ class VehicleManager(object):
         vehicle_id = vehicle.id
 
         # choose controller depending on vehicle
-        if vehicle_id == 45:
-            print("Vehicle 45 using ECO controller")
-            
+        # self.controller_name = "pid"
+        # self.controller = ControlManager(control_config)
+        # if vehicle_id == 49:
+        #     print("Vehicle 49 using PID controller")
+
+        if vehicle_id == 49:
+            print("Vehicle 49 using ECO controller")
+            self.controller_name = "eco"
             controller_module = importlib.import_module(
                 "opencda.core.actuation.eco_controller"
             )
-            
             self.controller = controller_module.Controller(control_config['args'])
-
         else:
+            self.controller_name = "pid"
             self.controller = ControlManager(control_config)
+        
 
         if data_dumping:
             self.data_dumper = DataDumper(self.perception_manager,
@@ -226,8 +234,30 @@ class VehicleManager(object):
         """
         # visualize the bev map if needed
         self.map_manager.run_step()
+        self.bev_camera.run_step()
         target_speed, target_pos = self.agent.run_step(target_speed)
         control = self.controller.run_step(target_speed, target_pos)
+        
+        # Log speed for vehicle 49
+        if self.vehicle.id == 49:
+            if not hasattr(self, '_speed_log'):
+                self._speed_log = []
+            current_speed = self.localizer.get_ego_spd()
+
+            if not hasattr(self, '_prev_speed'):
+                self._prev_speed = current_speed
+
+            acc = current_speed - self._prev_speed
+            self._prev_speed = current_speed
+
+            self._speed_log.append({
+                'step': len(self._speed_log),
+                'speed': current_speed,
+                'target_speed': target_speed,
+                'acceleration': acc,
+                'throttle': control.throttle,
+                'brake': control.brake,
+            })
 
         # dump data
         if self.data_dumper:
@@ -241,6 +271,13 @@ class VehicleManager(object):
         """
         Destroy the actor vehicle
         """
+        
+        if hasattr(self, '_speed_log') and self._speed_log:
+            import json, os
+            os.makedirs('./cache/speed_logs', exist_ok=True)
+            with open(f'./cache/speed_logs/{self.controller_name}_vehicle_{self.vehicle.id}.json', 'w') as f:
+                json.dump(self._speed_log, f, indent=4)
+                
         # Destroy safety sensors FIRST
         if self.safety_manager:
             self.safety_manager.destroy()
@@ -256,6 +293,10 @@ class VehicleManager(object):
         # Destroy map manager
         if self.map_manager:
             self.map_manager.destroy()
+            
+        # Destroy BEV camera
+        if self.bev_camera:
+            self.bev_camera.destroy()
 
         # Finally destroy vehicle
         if self.vehicle:

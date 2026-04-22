@@ -91,28 +91,16 @@ class Controller:
         self.past_steering = 0.
 
         self.dynamic = args['dynamic']
-        
-        # ECO-specific state
-        self.last_accel = 0.0
 
-        # --- Tunable ECO parameters ---
-        # Only reduce speed if steering angle exceeds this threshold (radians).
-        # 0.15 ≈ ~8.6 degrees — ignores gentle curves, only acts on real turns.
-        self.steering_threshold = 0.15
+        # --- ECO parameters (active) ---
+        # Throttle cap when close to target speed (reduces jerk near cruise)
+        self.coast_speed_error = 3.0    # km/h within target to start coasting
+        self.coast_throttle_cap = 0.6   # max throttle when coasting
 
-        # Maximum fraction of speed to shed on very sharp turns (steering=1.0).
-        # 0.15 means at most 15% speed reduction even in the sharpest turn.
-        self.max_speed_reduction = 0.15
-
-        # Acceleration smoothing: max change per step.
-        # 0.2 is gentler than 0.1 — allows the vehicle to respond to
-        # platoon speed commands without lagging.
-        self.max_accel_change = 0.2
-
-        # Coasting window: if |speed_error| < this, ease off throttle slightly.
-        # Helps avoid the throttle-on / throttle-off oscillation near target speed.
-        self.coast_window = 2.0   # km/h
-        self.coast_throttle_cap = 0.35  # max throttle when coasting
+        # Brake caps to prevent harsh braking events
+        self.soft_brake_threshold = 5.0  # speed overshoot (km/h) below which we brake softly
+        self.soft_brake_cap = 0.2        # max brake for small overshoots
+        self.hard_brake_cap = 0.6        # max brake for large overshoots
 
     def dynamic_pid(self):
         """
@@ -252,43 +240,37 @@ class Controller:
             control.brake = 1.0
             control.hand_brake = False
             return control
-
+        
         # --- Lateral control ---
         current_steering = self.lat_run_step(waypoint)
-
-        # --- ECO: Speed reduction only on sharp turns ---
-        abs_steer = abs(current_steering)
-        if abs_steer > self.steering_threshold:
-            reduction_fraction = (
-                (abs_steer - self.steering_threshold) /
-                (1.0 - self.steering_threshold)
-            ) * self.max_speed_reduction
-            adjusted_speed = target_speed * (1.0 - reduction_fraction)
-        else:
-            adjusted_speed = target_speed
-
+    
         # --- Longitudinal control ---
-        acceleration = self.lon_run_step(adjusted_speed)
-
-        # --- ECO: Smooth acceleration (prevent throttle spikes) ---
-        accel_diff = acceleration - self.last_accel
-        accel_diff = np.clip(accel_diff, -self.max_accel_change, self.max_accel_change)
-        acceleration = self.last_accel + accel_diff
-        self.last_accel = acceleration
+        acceleration = self.lon_run_step(target_speed)
 
         if acceleration >= 0.0:
-            control.throttle = min(acceleration, self.max_throttle)
+            throttle = min(acceleration, self.max_throttle)
+            # ECO: near target speed, ease off throttle to reduce jerk
+            speed_error = target_speed - self.current_speed
+            if speed_error < self.coast_speed_error:
+                throttle = min(throttle, self.coast_throttle_cap)
+            control.throttle = throttle
             control.brake = 0.0
         else:
+            raw_brake = min(abs(acceleration), self.max_brake)
+            # ECO: soft brake when small overspeed, harder only when needed
+            speed_error = self.current_speed - target_speed
+            if speed_error < self.soft_brake_threshold:
+                control.brake = min(raw_brake, self.soft_brake_cap)
+            else:
+                control.brake = min(raw_brake, self.hard_brake_cap)
             control.throttle = 0.0
-            control.brake = min(abs(acceleration), self.max_brake)
 
         # Steering regulation: changes cannot happen abruptly, can't steer too
         # much.
-        if current_steering > self.past_steering + 0.2:
-            current_steering = self.past_steering + 0.2
-        elif current_steering < self.past_steering - 0.2:
-            current_steering = self.past_steering - 0.2
+        if current_steering > self.past_steering + 0.1:
+            current_steering = self.past_steering + 0.1
+        elif current_steering < self.past_steering - 0.1:
+            current_steering = self.past_steering - 0.1
 
         if current_steering >= 0:
             steering = min(self.max_steering, current_steering)
