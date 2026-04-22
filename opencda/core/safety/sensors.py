@@ -419,7 +419,7 @@ class TrafficLightDector(object):
 
     def return_status(self):
         return {'ran_light': self.ran_light}
-    
+
     def destroy(self):
         # No CARLA actor created, so nothing to clean up
         pass

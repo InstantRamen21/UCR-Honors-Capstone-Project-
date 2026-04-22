@@ -68,7 +68,8 @@ Note: The `cache/sustainability_logs/` directory is generated automatically duri
 
 [Lab Website](https://tasl.ucr.edu/)
 
-<img width="1170" height="466" alt="image" src="https://github.com/user-attachments/assets/c7fae07f-5c7e-42cb-8d63-92a47bf49bf1" />
+<img width="1079" height="939" alt="image" src="https://github.com/user-attachments/assets/065a62ad-939e-4b3a-ac27-449772359210" />
+
 
 
 

@@ -298,6 +298,10 @@ class VehicleManager(object):
         if self.bev_camera:
             self.bev_camera.destroy()
 
+        # Destroy BEV camera
+        if self.bev_camera:
+            self.bev_camera.destroy()
+
         # Finally destroy vehicle
         if self.vehicle:
             self.vehicle.destroy()
