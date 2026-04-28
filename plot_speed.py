@@ -26,4 +26,5 @@ axes[2].legend()
 
 plt.xlabel('Time Step')
 plt.tight_layout()
+plt.savefig('./cache/speed_logs/pid_vs_eco_comparison.png', dpi=150, bbox_inches='tight')
 plt.show()

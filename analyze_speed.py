@@ -8,8 +8,8 @@ Usage:
     python analyze_speed.py
 
 Expects these files to exist:
-    ./cache/speed_logs/vehicle_45_baseline.json
-    ./cache/speed_logs/vehicle_45_eco.json
+    ./cache/speed_logs/pid_vehicle_49.json
+    ./cache/speed_logs/eco_vehicle_49.json
 """
 
 import json
@@ -71,8 +71,8 @@ def load_eco_score(label):
 
 
 def main():
-    baseline_path = './cache/speed_logs/vehicle_45_baseline.json'
-    eco_path      = './cache/speed_logs/vehicle_45_eco.json'
+    baseline_path = './cache/speed_logs/pid_vehicle_49.json'
+    eco_path      = './cache/speed_logs/eco_vehicle_49.json'    
 
     missing = [p for p in [baseline_path, eco_path] if not os.path.exists(p)]
     if missing:
