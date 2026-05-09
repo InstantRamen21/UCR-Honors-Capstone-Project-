@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Speed Comparison Analysis
-Compares vehicle 45 speed profile between baseline PID and ECO controller runs.
+Compares vehicle 49 speed profile between baseline PID and ECO controller runs.
 Also computes a simple efficiency score based on speed smoothness.
 
 Usage:
@@ -63,7 +63,7 @@ def load_eco_score(label):
     # summary may be a list or dict depending on OpenCDA version
     if isinstance(data, list):
         for entry in data:
-            if entry.get('vehicle_id') == 45:
+            if entry.get('vehicle_id') == 49:
                 return entry.get('eco_score')
     elif isinstance(data, dict):
         return data.get('eco_score')
@@ -80,8 +80,8 @@ def main():
         for p in missing:
             print(f"  {p}")
         print("\nRun the simulation twice:")
-        print("  1. With standard PID  -> saves vehicle_45_baseline.json")
-        print("  2. With ECO controller -> saves vehicle_45_eco.json")
+        print("  1. With standard PID  -> saves vehicle_49_baseline.json")
+        print("  2. With ECO controller -> saves vehicle_49_eco.json")
         return
 
     steps_b, speeds_b, targets_b = load_log(baseline_path)
@@ -106,7 +106,7 @@ def main():
     # Plot
     # ----------------------------------------------------------------
     fig = plt.figure(figsize=(14, 10))
-    fig.suptitle('Vehicle 45 — Baseline PID vs ECO Controller', fontsize=14, fontweight='bold')
+    fig.suptitle('Vehicle 49 — Baseline PID vs ECO Controller', fontsize=14, fontweight='bold')
     gs = gridspec.GridSpec(3, 2, figure=fig, hspace=0.45, wspace=0.35)
 
     # --- Plot 1: Speed profiles ---
