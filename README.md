@@ -66,11 +66,11 @@ Note: The `cache/sustainability_logs/` directory is generated automatically duri
 
 [Document with Summary/Instructions](https://docs.google.com/document/d/1Tcr5SiSvFJljOJPXTmZroKOqZfDWWW7Osq9d7-62o7E/edit?usp=sharing)
 
-[Written Capstone Document] (https://docs.google.com/document/d/1wCrYkyP3mE9TG4wCTkBSQBzA2YgtV6s3r7fE1HIcq_U/edit?usp=sharing)
+[Written Capstone Document](https://docs.google.com/document/d/1wCrYkyP3mE9TG4wCTkBSQBzA2YgtV6s3r7fE1HIcq_U/edit?usp=sharing)
 
-[Presentation Slides] (https://gamma.app/docs/Sustainable-Cooperative-Autonomous-Driving-in-CARLA-Using-OpenCDA-z8wz6znzrqmw1wf)
+[Presentation Slides](https://gamma.app/docs/Sustainable-Cooperative-Autonomous-Driving-in-CARLA-Using-OpenCDA-z8wz6znzrqmw1wf)
 
-[Tony's Website] (https://hlee507.wixsite.com/tony)
+[Tony's Website](https://hlee507.wixsite.com/tony)
 
 [Lab Website](https://tasl.ucr.edu/)
 
